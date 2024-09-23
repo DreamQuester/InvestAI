@@ -23,7 +23,7 @@ class TokenManager:
             return self.access_token  # 기존 토큰 반환, 오류 발생하지 않음
         
         # 토큰 요청
-        with open('API\kis_devlp.yaml', 'r', encoding='UTF8') as f:
+        with open('API/auth/kis_devlp.yaml', 'r', encoding='UTF8') as f:
             temp = yaml.load(f, Loader=yaml.FullLoader)
             kis_devlp = Box(temp)
         

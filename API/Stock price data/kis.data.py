@@ -1,10 +1,15 @@
 import requests
 import json
 import yaml
-from kis_auth import token_manager  # a.py에서 TokenManager 가져오기
+# from API.auth.kis_auth import token_manager
 from box import Box
 
-with open('API\kis_devlp.yaml', 'r', encoding='UTF8') as f:
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../auth')))
+from kis_auth import token_manager
+
+with open('API/auth/kis_devlp.yaml', 'r', encoding='UTF8') as f:
     temp = yaml.load(f, Loader=yaml.FullLoader)
     kis_devlp = Box(temp)
 
@@ -22,7 +27,7 @@ headers = {
 }
 
 # 거래소코드(EXCD), 종목코드(SYMB) 확인 / 일,주,월 구분(GUBN) 결정
-params = {"AUTH": "", "EXCD": "NAS", "SYMB": "TSLA", "GUBN": 1, "BYMD": "", "MODP": 1}
+params = {"AUTH": "", "EXCD": "NAS", "SYMB": "TSLA", "GUBN": 0, "BYMD": "", "MODP": 1}
 PATH = "/uapi/overseas-price/v1/quotations/dailyprice"
 URL = f"{URL_BASE}/{PATH}"
 
