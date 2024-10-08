@@ -1,32 +1,53 @@
 import requests
+from datetime import datetime, timedelta
 
-# API 키 파라미터 수정 필요
-url = 'https://www.alphavantage.co/query?function=EMA&symbol=IBM&interval=weekly&time_period=10&series_type=open&apikey=demo'
-r = requests.get(url)
-data = r.json()
+def get_ema_list():
+    # API 키 파라미터 수정 필요
+    url = 'https://www.alphavantage.co/query?function=EMA&symbol=IBM&interval=daily&time_period=20&series_type=open&apikey=YOUR_API_KEY'
+    r = requests.get(url)
+    data = r.json()
 
-# 메타 데이터 출력
-meta_data = data['Meta Data']
-print("🔍 EMA 메타 데이터:")
-print(f"  심볼: {meta_data['1: Symbol']}")
-print(f"  지표: {meta_data['2: Indicator']}")
-print(f"  가장 최근 갱신: {meta_data['3: Last Refreshed']}")
-print(f"  간격: {meta_data['4: Interval']}")
-print(f"  기간: {meta_data['5: Time Period']}")
-print(f"  시리즈 유형: {meta_data['6: Series Type']}\n")
+    # 오늘 날짜와 2년 전 날짜 계산
+    today = datetime.now()
+    two_years_ago = today - timedelta(days=730)
 
-# EMA 데이터를 리스트에 저장
-ema_list = []
-ema_data = data['Technical Analysis: EMA']
+    # EMA 데이터를 리스트에 저장
+    ema_list = []
+    ema_data = data['Technical Analysis: EMA']
 
-for date, values in sorted(ema_data.items()):
-    ema_entry = {
-        "날짜": date,
-        "EMA": float(values['EMA'])
-    }
-    ema_list.append(ema_entry)
+    for date, values in sorted(ema_data.items()):
+        entry_date = datetime.strptime(date, '%Y-%m-%d')
+        
+        # 날짜가 오늘의 2년 전 날짜보다 이전인지 확인
+        if entry_date >= two_years_ago:
+            ema_entry = {
+                "날짜": date,
+                "EMA": float(values['EMA'])
+            }
+            ema_list.append(ema_entry)
 
-# 결과 출력
-print("📈 저장된 EMA 값:")
-for entry in ema_list:
-    print(f"  날짜: {entry['날짜']}, EMA: {entry['EMA']:.4f}")
+    # 날짜 범위 생성 (2년 전부터 오늘까지)
+    date_range = [two_years_ago + timedelta(days=i) for i in range((today - two_years_ago).days + 1)]
+    final_ema_list = []
+
+    previous_entry = None
+
+    for date in date_range:
+        date_str = date.strftime('%Y-%m-%d')
+        found = False
+        
+        for entry in ema_list:
+            if entry['날짜'] == date_str:
+                final_ema_list.append(entry)
+                previous_entry = entry  # 현재 날짜의 값을 이전 값으로 저장
+                found = True
+                break
+        
+        # 날짜가 존재하지 않는 경우 이전 값을 추가
+        if not found and previous_entry:
+            final_ema_list.append({
+                "날짜": date_str,
+                "EMA": previous_entry['EMA']
+            })
+    
+    return final_ema_list
