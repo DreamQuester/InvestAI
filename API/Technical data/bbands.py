@@ -1,40 +1,57 @@
 import requests
+from datetime import datetime, timedelta
 
-# API 키 파라미터 수정 필요
-url = 'https://www.alphavantage.co/query?function=BBANDS&symbol=IBM&interval=weekly&time_period=5&series_type=close&nbdevup=3&nbdevdn=3&apikey=demo'
-r = requests.get(url)
-data = r.json()
+def get_bbands_list():
+    # API 키 파라미터 수정 필요
+    url = 'https://www.alphavantage.co/query?function=BBANDS&symbol=IBM&interval=daily&time_period=20&series_type=close&nbdevup=2&nbdevdn=2&apikey=YOUR_API_KEY'
+    r = requests.get(url)
+    data = r.json()
 
-# 메타 데이터 출력
-meta_data = data['Meta Data']
-print("🔍 메타 데이터:")
-print(f"  심볼: {meta_data['1: Symbol']}")
-print(f"  지표: {meta_data['2: Indicator']}")
-print(f"  가장 최근 갱신: {meta_data['3: Last Refreshed']}")
-print(f"  간격: {meta_data['4: Interval']}")
-print(f"  기간: {meta_data['5: Time Period']}")
-print(f"  상한선 표준 편차 배수: {meta_data['6.1: Deviation multiplier for upper band']}")
-print(f"  하한선 표준 편차 배수: {meta_data['6.2: Deviation multiplier for lower band']}")
-print(f"  시리즈 유형: {meta_data['7: Series Type']}\n")
+    # 오늘 날짜와 2년 전 날짜 계산
+    today = datetime.now()
+    two_years_ago = today - timedelta(days=730)
 
-# 데이터 리스트에 저장
-bbands_list = []
+    # 데이터 리스트에 저장
+    bbands_list = []
 
-bbands_data = data['Technical Analysis: BBANDS']
-for date, values in sorted(bbands_data.items()):
-    bband_entry = {
-        "날짜": date,
-        "상한선": values['Real Upper Band'],
-        "중간선": values['Real Middle Band'],
-        "하한선": values['Real Lower Band']
-    }
-    bbands_list.append(bband_entry)
+    bbands_data = data['Technical Analysis: BBANDS']
+    for date, values in sorted(bbands_data.items()):
+        entry_date = datetime.strptime(date, '%Y-%m-%d')
+        
+        # 날짜가 오늘의 2년 전 날짜보다 이전인지 확인
+        if entry_date >= two_years_ago:
+            bband_entry = {
+                "날짜": date,
+                "상한선": float(values['Real Upper Band']),
+                "중간선": float(values['Real Middle Band']),
+                "하한선": float(values['Real Lower Band'])
+            }
+            bbands_list.append(bband_entry)
 
-# 리스트 출력
-print("📈 볼린저 밴드 결과:")
-for entry in bbands_list:
-    print(f"  날짜: {entry['날짜']}")
-    print(f"    상한선: {entry['상한선']}")
-    print(f"    중간선: {entry['중간선']}")
-    print(f"    하한선: {entry['하한선']}")
-    print()
+    # 날짜 범위 생성 (2년 전부터 오늘까지)
+    date_range = [two_years_ago + timedelta(days=i) for i in range((today - two_years_ago).days + 1)]
+    final_bbands_list = []
+
+    previous_entry = None
+
+    for date in date_range:
+        date_str = date.strftime('%Y-%m-%d')
+        found = False
+        
+        for entry in bbands_list:
+            if entry['날짜'] == date_str:
+                final_bbands_list.append(entry)
+                previous_entry = entry  # 현재 날짜의 값을 이전 값으로 저장
+                found = True
+                break
+        
+        # 날짜가 존재하지 않는 경우 이전 값을 추가
+        if not found and previous_entry:
+            final_bbands_list.append({
+                "날짜": date_str,
+                "상한선": previous_entry['상한선'],
+                "중간선": previous_entry['중간선'],
+                "하한선": previous_entry['하한선']
+            })
+
+    return final_bbands_list
